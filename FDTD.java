@@ -3,7 +3,7 @@ import static java.lang.Math.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-//import java.util.Calendar;
+
 
 public class FDTD {
 
@@ -14,11 +14,11 @@ public class FDTD {
 
         int i, j;//for loops
         float x; //for coordinate
-        final float lambd = 1064e-9f; //final is GOOD !!!!
+        final float lambd = 1064e-9f; 
         final float dx = lambd / 15;         // max dx=lam/10 !!
         final float dy = dx;
         final float period = 2e-6f;
-        final float Q = 1.08f;//1.08
+        final float Q = 1.08f;//1.0 = default
         final float n = 1;//refractive index
 
         final float prodol = 2 * n * period * period / lambd / Q;
@@ -33,8 +33,8 @@ public class FDTD {
         final float Z = 376.7303f;
         final float s = dt / dx;
         final float k3 = (1 - s) / (1 + s);//for MUR
-        final float w = 19e-7f;//19 gauss
-        final float alpha = (float) (sin(0.0 / 180 * PI));//radians. АККУРАТНЕЙ с целочисленным делением
+        final float w = 19e-7f;//1.9 mkm
+        final float alpha = (float) (sin(0.0 / 180 * PI));//radians. 
 
         final int begin = 10;// must bee small
         System.out.println("Imeem__Sloy= " + (ny - begin) * dy / prodol * 2);
@@ -45,23 +45,22 @@ public class FDTD {
         for (i = 1; i < nx + 1; i++) {
             for (j = 1; j < ny + 1; j++) {
                 // EPSILON MATRIX full initialization
-                //ПЕРЕНОРМИРОВКА МОДУЛЯЦИИ
-                e[i][j] = (float) (ds / (n + ((j < begin) ? 0 : (mod / 2) * (1 + signum(-0.1 + cos(2 * PI * (i - nx / 2.0 + 0.5) * dx / period) * sin(2 * PI * (j - begin) * dy / prodol))))));
+                e[i][j] = (float) (ds / (n + ((j < begin) ? 0 : (mod / 2) * (1 + signum(-0.1 
+                           + cos(2 * PI * (i - nx / 2.0 + 0.5) * dx / period) * sin(2 * PI * (j - begin) * dy / prodol))))));
             }
         }
 
         float[][] end = new float[2][nx + 1]; // boundary conditions
         float[][] top = new float[2][ny + 1];
         float[][] bottom = new float[2][ny + 1];
-        //long tTime  = Calendar.getInstance().getTimeInMillis();
-
+        
         final int tmax = (int) (ny * 2.2);
         System.out.println("START CICLE");
-        for (int t = 1; t <= tmax; t++) {                    //____nachalo cicla
+        for (int t = 1; t <= tmax; t++) {                   
             float tt = Math.min(t * s + 10, ny - 1);
-            //gauss // bez zatuhania          // int/2
+            //gauss 
             switch (method) {
-                case "cos":        //напишы тут функцию вместо 4 копипа
+                case "cos":        
                     for (i = 1; i <= nx - 1; i++) {
                         x = (float) (dx * (i - (float) nx / 2 + 0.5));
                         Ez[i][1] = (float) (exp(-pow(x, 2) / w / w - (t - 1) * dt / tau) * cos((x * alpha + (t - 1) * dt) * omega));//перепишешь лямбді массива
@@ -102,8 +101,6 @@ public class FDTD {
                 Ez[1][i] = top[1][i] + k3 * (top[0][i] - Ez[2][i]);//verh kray
                 Ez[nx][i] = bottom[0][i] + k3 * (bottom[1][i] - Ez[nx - 1][i]);
             }
-            //Ez=Arrays.stream(Ez0).map(float[]::clone).toArray(float[][]::new);  VERY SLOW !!! 2.7X
-            //Ez=Arrays.copyOf(Ez0, Ez0.length);   FAST
             switch (method) {
                 case "cos":
                     for (i = 1; i <= nx - 1; i++) {
@@ -131,14 +128,13 @@ public class FDTD {
 
         }
 
-        //System.out.println((float)(Calendar.getInstance().getTimeInMillis() - tTime)/1000 + " sec");
         int pos = method.equals("cos") ? 0 : 1;
         BasicEx.forFurier[pos] = new double[nx];
         int endF = (int) (ny * 0.95);//0.99
         for (i = 1; i <= nx; i++) {
             BasicEx.forFurier[pos][i - 1] = Ez[i][endF];
             for (j = 1; j <= ny; j++) {
-                Ez[i][j] = abs(Ez[i][j]);// ABS
+                Ez[i][j] = abs(Ez[i][j]);// amplitude
             }
         }
         Hx = null;
