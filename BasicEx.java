@@ -12,7 +12,71 @@ import java.util.Calendar;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
-class Surface extends JPanel {
+
+
+public class BasicEx extends JFrame {
+
+    public static int nx = 2048;//limit=15M/1gb одной компоненты. ПОВЫСИЛ лимит памяти, и уже Флоат, но 2 компоненты
+    public static int ny = 500;//2048*2000(y) = 104sec 2компоненты
+    public static double[][] forFurier = new double[2][1];
+    
+    private static String[] arg;
+
+    public BasicEx() {
+        if (arg.length > 1) {
+            nx = Integer.parseInt(arg[0]);
+            ny = Integer.parseInt(arg[1]);
+        }
+
+        long tTime = Calendar.getInstance().getTimeInMillis();
+        NewThread co = new NewThread(nx, ny, "cos");
+        NewThread si = new NewThread(nx, ny, "sin");
+        try {
+            co.t.join();
+            si.t.join();
+        } catch (InterruptedException e) {
+        }
+        System.out.println("Full calculate time   "
+                + (double) (Calendar.getInstance().getTimeInMillis() - tTime) / 1000 + " sec");
+        FDTD.service.shutdown();
+        
+        for (int i = 0; i < nx + 1; i++) {
+            for (int j = 0; j < ny + 1; j++) {
+                co.E[i][j] = co.E[i][j] * co.E[i][j] + si.E[i][j] * si.E[i][j];
+            }
+        }
+        si = null;
+        // ТЕПЕРЬ ЭТО ИНТЕНСИВНОсТЬ
+
+        FFT fft = new FFT(nx);
+        fft.fft(forFurier[0], forFurier[1]);
+        for (int i = 0; i < forFurier[0].length; i++) {
+            forFurier[0][i] = pow( //amplitude //in low power
+                    pow(forFurier[0][i], 2) + pow(forFurier[1][i], 2), 0.5);
+
+        }
+        //System.out.println(Arrays.toString(forFurier[0]));
+        ny = 1366;
+        add(new Surface(co.E));
+        setTitle("FDTD Java 2D example");
+        setSize(ny, nx + 40);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    }
+
+    public static void main(String[] args) {
+        arg = args;
+
+        EventQueue.invokeLater(new Runnable() {
+
+            @Override
+            public void run() {
+                BasicEx ex = new BasicEx();
+                ex.setVisible(true);
+            }
+        });
+    }
+    class Surface extends JPanel {
 
     float[][] arr = new float[1][1];
 
@@ -74,68 +138,4 @@ class Surface extends JPanel {
                 first + x, (int) ((mAx - f[0]) / mAx * tX));
     }
 }
-
-public class BasicEx extends JFrame {
-
-    private static String[] arg;
-
-    public static int nx = 2048;//limit=15M/1gb одной компоненты. ПОВЫСИЛ лимит памяти, и уже Флоат, но 2 компоненты
-    public static int ny = 500;//2048*2000(y) = 104sec 2компоненты
-    public static double[][] forFurier = new double[2][1];
-
-    public BasicEx() {
-        if (arg.length > 1) {
-            nx = Integer.parseInt(arg[0]);
-            ny = Integer.parseInt(arg[1]);
-        }
-
-        long tTime = Calendar.getInstance().getTimeInMillis();
-        NewThread co = new NewThread(nx, ny, "cos");
-        NewThread si = new NewThread(nx, ny, "sin");
-        try {
-            co.t.join();
-            si.t.join();
-        } catch (InterruptedException e) {
-        }
-        System.out.println("Full calculate time   "
-                + (double) (Calendar.getInstance().getTimeInMillis() - tTime) / 1000 + " sec");
-        FDTD.service.shutdown();
-        
-        for (int i = 0; i < nx + 1; i++) {
-            for (int j = 0; j < ny + 1; j++) {
-                co.E[i][j] = co.E[i][j] * co.E[i][j] + si.E[i][j] * si.E[i][j];
-            }
-        }
-        si = null;
-        // ТЕПЕРЬ ЭТО ИНТЕНСИВНОсТЬ
-
-        FFT fft = new FFT(nx);
-        fft.fft(forFurier[0], forFurier[1]);
-        for (int i = 0; i < forFurier[0].length; i++) {
-            forFurier[0][i] = pow( //amplitude //in low power
-                    pow(forFurier[0][i], 2) + pow(forFurier[1][i], 2), 0.5);
-
-        }
-        //System.out.println(Arrays.toString(forFurier[0]));
-        ny = 1366;
-        add(new Surface(co.E));
-        setTitle("FDTD Java 2D example");
-        setSize(ny, nx + 40);
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    }
-
-    public static void main(String[] args) {
-        arg = args;
-
-        EventQueue.invokeLater(new Runnable() {
-
-            @Override
-            public void run() {
-                BasicEx ex = new BasicEx();
-                ex.setVisible(true);
-            }
-        });
-    }
-
 }
